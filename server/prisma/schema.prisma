@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  password        String
+  businessProfile BusinessProfile?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([email])
+}
+
+model BusinessProfile {
+  id            Int       @id @default(autoincrement())
+  name          String
+  address       String?
+  email         String
+  phoneNumber   String?
+  user          User      @relation(fields: [userId], references: [id])
+  userId        Int       @unique
+  products      Product[]
+  suppliers     Supplier[]
+  activities    Activity[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([name])
+  @@index([email])
+}
+
+model Activity {
+  id          Int             @id @default(autoincrement())
+  action      String         // "added", "updated", "deleted"
+  entityType  String         // "product", "supplier"
+  entityId    Int
+  details     String?
+  businessId  Int
+  business    BusinessProfile @relation(fields: [businessId], references: [id])
+  createdAt   DateTime       @default(now())
+
+  @@index([businessId])
+  @@index([createdAt])
+  @@index([entityType])
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  name          String
+  sku           String   @unique
+  category      Category @default(OTC)
+  quantity      Int      @default(0)
+  minStockLevel Int
+  price         Decimal  @db.Decimal(10,2)
+  expiryDate    DateTime
+  description   String?
+  supplierId    Int
+  supplier      Supplier @relation(fields: [supplierId], references: [id])
+  businessId    Int
+  business      BusinessProfile @relation(fields: [businessId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([expiryDate])
+  @@index([quantity])
+  @@index([name])
+  @@index([sku])
+  @@index([businessId])
+}
+
+model Supplier {
+  id            Int       @id @default(autoincrement())
+  name          String
+  contactPerson String
+  email         String
+  phone         String
+  products      Product[]
+  businessId    Int
+  business      BusinessProfile @relation(fields: [businessId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([name])
+  @@index([email])
+  @@index([businessId])
+}
+
+enum Category {
+  OTC
+  PRESCRIPTION
+}
